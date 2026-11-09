@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discursos Públicos</title>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --azul:#1769aa; --azul-escuro:#0d3b66; --fundo:#eaf2f8; --cartao:#ffffff;
+  --texto:#183042; --sim:#c8f7d0; --sim-texto:#176b2c;
+  --nao:#ffd1d1; --nao-texto:#9b1c1c; --borda:#d7e3ec;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; font-family:Arial, sans-serif; color:var(--texto);
+  background:linear-gradient(180deg,#eaf2f8 0%,#f5f9fc 100%); min-height:100vh;
+}
+.container { max-width:1050px; margin:auto; padding:22px 16px 50px; }
+header {
+  background:linear-gradient(135deg,var(--azul-escuro),var(--azul)); color:white;
+  border-radius:18px; padding:24px; box-shadow:0 8px 25px #0d3b6630;
+}
+h1 { margin:0 0 6px; font-size:30px; }
+.subtitulo { margin:0; opacity:.9; }
+.painel {
+  background:var(--cartao); margin-top:16px; padding:16px; border-radius:16px;
+  box-shadow:0 4px 18px #0d3b6612; border:1px solid var(--borda);
+}
+.linha { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+input {
+  flex:1; min-width:230px; padding:13px 15px; border:1px solid #c8d6e2;
+  border-radius:11px; font-size:15px; outline:none;
+}
+input:focus,select:focus { border-color:var(--azul); box-shadow:0 0 0 3px #1769aa18; }
+select { width:100%; min-width:0; margin-top:6px; padding:13px 15px; border:1px solid #c8d6e2; border-radius:11px; font-size:15px; background:#fff; }
+button {
+  border:0; border-radius:10px; padding:11px 15px; font-weight:700;
+  cursor:pointer; transition:.15s; font-size:14px;
+}
+button:hover { transform:translateY(-1px); filter:brightness(.98); }
+.primario { background:var(--azul); color:white; }
+.secundario { background:#edf2f6; color:#334e68; }
+.salvar { background:#176b2c; color:white; }
+.status { margin-top:10px; font-size:14px; color:#526779; }
+#lista { margin-top:16px; }
+.item {
+  background:white; border:1px solid var(--borda); border-radius:14px; padding:14px;
+  margin:9px 0; display:flex; align-items:center; gap:12px;
+  box-shadow:0 2px 8px #0d3b660b;
+}
+.numero { width:44px; font-weight:800; color:var(--azul-escuro); font-size:16px; text-align:center; }
+.titulo { flex:1; line-height:1.4; }
+.escolha { display:flex; gap:7px; }
+.escolha button { min-width:70px; }
+.sim { background:var(--sim); color:var(--sim-texto); }
+.nao { background:var(--nao); color:var(--nao-texto); }
+.selecionado { outline:3px solid #1769aa55; box-shadow:0 0 0 2px white inset; }
+.indisponivel {
+  opacity:.62; background:#f3f5f7; text-decoration:line-through;
+}
+.badge {
+  display:inline-block; margin-left:6px; padding:4px 8px; border-radius:999px;
+  background:#e2e7eb; color:#5c6770; font-size:11px; font-weight:800;
+  text-decoration:none;
+}
+.auth-card { max-width:520px; margin:50px auto; }
+.auth-card input { width:100%; margin:6px 0; }
+.auth-botoes { display:flex; gap:10px; margin-top:8px; }
+.erro { color:#a11; background:#fff1f1; padding:10px; border-radius:9px; margin-top:10px; display:none; }
+.oculto { display:none !important; }
+@media (max-width:650px) {
+  h1 { font-size:24px; }
+  .item { align-items:flex-start; }
+  .numero { width:34px; }
+  .titulo { font-size:14px; }
+  .escolha { flex-direction:column; }
+  .escolha button { min-width:68px; padding:10px 8px; }
+  .container { padding:12px 10px 35px; }
+}
+
+
+h2 { margin:0 0 6px; color:var(--azul-escuro); }
+.ajuda { margin:0 0 16px; color:#526779; font-size:14px; line-height:1.5; }
+.form-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.form-grid label { font-size:13px; font-weight:700; color:#334e68; }
+.form-grid input { width:100%; min-width:0; margin-top:6px; }
+.form-actions { margin-top:14px; }
+.orador-card {
+  border:1px solid var(--borda); border-radius:14px; padding:14px; margin:10px 0;
+  display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center;
+  background:#fff; box-shadow:0 2px 8px #0d3b660b;
+}
+.orador-nome { font-size:17px; font-weight:800; color:var(--azul-escuro); }
+.orador-detalhes { margin-top:5px; color:#526779; line-height:1.5; font-size:14px; }
+.orador-acoes { display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+.orador-status { margin-top:8px; font-size:13px; font-weight:700; }
+.orador-status.enviado { color:#176b2c; }
+.orador-status.pendente { color:#9a6700; }
+.agenda-mes { margin:22px 0 10px; padding:13px 15px; border-radius:12px; background:linear-gradient(90deg,#073b66,#0876bd); color:white; font-size:17px; font-weight:800; text-transform:capitalize; box-shadow:0 3px 12px #073b6620; }
+.agenda-data { margin:18px 0 8px; padding:10px 12px; border-radius:10px; background:#eaf2f8; color:var(--azul-escuro); font-weight:800; }
+.contadores { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+.contador { background:#edf2f6; border-radius:999px; padding:7px 11px; font-size:13px; font-weight:700; }
+.btn-enviado { background:#176b2c; color:#fff; }
+.btn-desfazer { background:#fff1d6; color:#805b00; }
+.vazio { text-align:center; padding:28px 10px; color:#718096; }
+@media (max-width:800px) { .form-grid { grid-template-columns:1fr; } }
+@media (max-width:650px) {
+  .orador-card { grid-template-columns:1fr; }
+  .orador-acoes { justify-content:flex-start; }
+}
+
+.brand{display:flex;align-items:center;gap:14px}
+.jw-logo{display:block;width:86px;height:86px;object-fit:contain;flex:0 0 auto;border-radius:50%;background:#fff;box-shadow:0 3px 12px #001b3325}
+.brand h1{margin:0 0 6px}
+.tema-cadastro{display:grid;grid-template-columns:minmax(90px,140px) 1fr auto;gap:10px;align-items:end;margin:12px 0}
+.tema-cadastro label{font-size:13px;font-weight:700;color:#334e68}
+.tema-cadastro input{width:100%;min-width:0;margin-top:6px}
+.tema-opcoes{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.tema-opcoes button{font-size:12px;padding:7px 10px}
+.tema-riscado{text-decoration:line-through;text-decoration-thickness:2px;color:#7b8794}.tema-riscado .tema-atribuido,.tema-riscado .badge{text-decoration:none}
+.tema-atribuido{font-size:11px;background:#e4f6e8;color:#176b2c;border-radius:999px;padding:4px 8px;font-weight:800;white-space:nowrap}
+.numero-discurso{max-width:140px}
+@media(max-width:650px){.brand{align-items:center}.jw-logo{width:66px;height:66px}.tema-cadastro{grid-template-columns:1fr}.tema-cadastro button{width:100%}.item{flex-wrap:wrap}.tema-atribuido{margin-left:4px}}
+
+
+/* Redesign profissional azul e branco */
+:root { --azul:#0876bd; --azul-escuro:#073b66; --fundo:#f3f7fb; --borda:#dce7f0; }
+body { background:#f3f7fb; font-family:Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+.container { max-width:1180px; padding-top:24px; }
+header { border-radius:22px; padding:28px; background:linear-gradient(125deg,#073b66 0%,#0876bd 72%,#3297d5 100%); }
+.painel { border-radius:18px; padding:20px; box-shadow:0 5px 20px rgba(7,59,102,.055); }
+input, select { border-radius:12px; border-color:#d3e0eb; }
+button { border-radius:11px; min-height:40px; }
+.resumo-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:18px; }
+.resumo-card { display:flex; align-items:center; gap:14px; padding:18px; background:#fff; border:1px solid #dce7f0; border-radius:17px; box-shadow:0 4px 16px rgba(7,59,102,.045); }
+.resumo-icone { display:grid; place-items:center; width:48px; height:48px; flex:0 0 48px; border-radius:14px; background:#e8f4fc; font-size:23px; }
+.resumo-label { font-size:13px; color:#60778b; margin-bottom:5px; }
+.resumo-card strong { font-size:28px; line-height:1; color:#073b66; }
+.item { border-radius:14px; }
+.item.indisponivel { text-decoration:none; }
+@media(max-width:650px) {
+ .container { padding:12px 10px 30px; }
+ header { padding:19px 16px; border-radius:17px; }
+ .resumo-grid { grid-template-columns:1fr; gap:9px; }
+ .resumo-card { padding:14px; }
+ .resumo-card strong { font-size:24px; }
+ .escolha { flex-direction:row; flex-wrap:wrap; }
+ .escolha button { flex:1 1 70px; }
+ .item { gap:8px; }
+}
+
+
+/* Identidade visual inspirada na imagem JW.ORG enviada */
+:root { --azul:#4c6eaa; --azul-escuro:#3e5f98; --fundo:#f3f3f3; --cartao:#ffffff; --borda:#d4d7dc; }
+body { background:linear-gradient(180deg,#f0f0f0 0%,#fafafa 100%); }
+header { background:linear-gradient(135deg,#3e5f98 0%,#4c6eaa 100%); box-shadow:0 8px 25px #3e5f9828; }
+.primario { background:#4c6eaa; }
+input:focus,select:focus { border-color:#4c6eaa; box-shadow:0 0 0 3px #4c6eaa20; }
+.agenda-mes { background:linear-gradient(90deg,#3e5f98,#4c6eaa); }
+.agenda-data { background:#eceff4; color:#3e5f98; }
+.resumo-icone { background:#edf1f8; }
+.resumo-card strong,h2,.orador-nome,.numero { color:#3e5f98; }
+.secundario { background:#eceff4; color:#3e5f98; }
+@media(max-width:650px){ .brand{align-items:center} .jw-logo{width:66px;height:66px} }
+
+/* Navegação lateral */
+.topo-app{display:flex;align-items:center;gap:14px}
+.menu-botao{background:#ffffff20;color:#fff;border:1px solid #ffffff55;width:46px;height:46px;padding:0;font-size:24px;display:grid;place-items:center;flex:0 0 46px}
+.menu-fundo{position:fixed;inset:0;background:#071d32a8;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.menu-lateral{position:fixed;z-index:41;top:0;left:0;height:100dvh;width:min(310px,86vw);background:#fff;box-shadow:12px 0 35px #001b3330;transform:translateX(-105%);transition:transform .22s ease;padding:22px 16px;display:flex;flex-direction:column;gap:8px}
+.menu-aberto .menu-fundo{opacity:1;pointer-events:auto}
+.menu-aberto .menu-lateral{transform:translateX(0)}
+.menu-titulo{font-size:18px;font-weight:800;color:#3e5f98;padding:8px 10px 16px;border-bottom:1px solid #e1e7ef;margin-bottom:8px}
+.menu-item{width:100%;text-align:left;background:#f1f4f8;color:#29445e;padding:14px 13px;font-size:15px}
+.menu-item:hover{background:#e4edf7}
+.menu-sair{margin-top:auto;background:#fff0f0;color:#9b1c1c}
+@media(max-width:650px){.topo-app{gap:10px}.topo-app .brand{min-width:0}.topo-app .brand h1{font-size:21px}.topo-app .jw-logo{width:54px;height:54px}}
+
+
+/* Organização do menu e navegação: todas as opções ficam no botão de três barras */
+.topo-app{align-items:center}
+.menu-botao{width:58px;height:54px;flex:0 0 58px;display:flex;flex-direction:column;gap:1px;align-items:center;justify-content:center;font-size:22px;border-radius:13px}
+.menu-botao small{font-size:9px;letter-spacing:1.2px;font-weight:800}
+.menu-cabecalho{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 16px;border-bottom:1px solid #e3eaf1;margin-bottom:4px}
+.menu-titulo{border:0;margin:0;padding:0;font-size:18px}
+.menu-fechar{background:#eef2f6;color:#36536d;width:36px;height:36px;padding:0;font-size:24px;line-height:1}
+.menu-secao{font-size:10px;letter-spacing:1.25px;font-weight:800;color:#8192a3;margin:15px 10px 3px}
+.menu-item{display:flex;align-items:center;gap:12px;border:1px solid transparent;min-height:48px;border-radius:12px}
+.menu-item span{width:24px;text-align:center;font-size:17px}
+.menu-item:hover{background:#eaf2fa;border-color:#d8e6f2;transform:none}
+.menu-rodape{margin-top:auto;padding-top:12px;border-top:1px solid #e5ebf1}
+.menu-sair{margin:0;background:#fff2f1;color:#9b3030}
+.painel-status{padding:12px 18px}
+.status-topo{display:flex;align-items:center;gap:8px;color:#577086;font-size:12px;font-weight:700}
+.status-ponto{width:8px;height:8px;border-radius:50%;background:#2eaa68;box-shadow:0 0 0 3px #2eaa681c}
+.status-separador{color:#a8b5c1}
+#usuario{margin-top:7px}
+#status{margin-top:4px}
+.resumo-grid{margin-bottom:16px}
+.resumo-card{min-height:100px}
+.resumo-label{line-height:1.35}
+#abaDiscursos,#abaOradores{scroll-margin-top:16px}
+.painel h2{letter-spacing:-.2px}
+@media(max-width:650px){
+ .menu-botao{width:50px;height:50px;flex-basis:50px}
+ .topo-app .brand{gap:9px}
+ .topo-app .brand h1{font-size:19px}
+ .topo-app .subtitulo{font-size:12px;line-height:1.35}
+ .menu-lateral{padding:18px 14px}
+ .status-topo{font-size:11px}
+}
+
+</style>
+</head>
+<body>
+
+<div id="login" class="container auth-card">
+  <div class="painel">
+    <h1 style="color:#0d3b66;margin-top:0">Discursos Públicos</h1>
+    <p>Entre com seu e-mail para acessar a programação compartilhada de discursos e oradores.</p>
+    <input id="email" type="email" placeholder="E-mail">
+    <input id="senha" type="password" placeholder="Senha (mínimo 6 caracteres)">
+    <div class="auth-botoes">
+      <button class="primario" onclick="entrar()">Entrar</button>
+      <button class="secundario" onclick="criarConta()">Criar conta</button>
+    </div>
+    <div id="authErro" class="erro"></div>
+  </div>
+</div>
+
+<div id="app" class="container oculto">
+  <header>
+    <div class="topo-app">
+      <button class="menu-botao" type="button" aria-label="Abrir menu" aria-expanded="false" onclick="alternarMenu(true)"><span>☰</span><small>MENU</small></button>
+      <div class="brand"><img class="jw-logo" src="assets/jw-org-logo.png" alt="Logotipo JW.ORG"><div><h1>Discursos Públicos</h1>
+      <p class="subtitulo">Programação, oradores e temas organizados em um só lugar.</p></div></div>
+    </div>
+  </header>
+  <div id="menuFundo" class="menu-fundo" onclick="alternarMenu(false)"></div>
+  <nav id="menuLateral" class="menu-lateral" aria-label="Navegação principal">
+    <div class="menu-cabecalho">
+      <div class="menu-titulo">Discursos Públicos</div>
+      <button class="menu-fechar" type="button" aria-label="Fechar menu" onclick="alternarMenu(false)">×</button>
+    </div>
+    <p class="menu-secao">CONSULTAR</p>
+    <button class="menu-item" onclick="navegarMenu('inicio')"><span>⌂</span> Visão geral</button>
+    <button class="menu-item" onclick="navegarMenu('discursos')"><span>📚</span> Temas de discursos</button>
+    <button class="menu-item" onclick="navegarMenu('oradores')"><span>🎤</span> Oradores cadastrados</button>
+    <button class="menu-item" onclick="navegarMenu('agenda')"><span>🗓️</span> Agenda de oradores</button>
+    <p class="menu-secao">ORGANIZAR</p>
+    <button class="menu-item" onclick="navegarMenu('cadastro')"><span>＋</span> Incluir orador</button>
+    <button class="menu-item" onclick="navegarMenu('lembretes')"><span>🔔</span> Lembretes e WhatsApp</button>
+    <button class="menu-item" onclick="exportarPlanilha();alternarMenu(false)"><span>📊</span> Exportar para planilha</button>
+    <div class="menu-rodape"><button class="menu-item menu-sair" onclick="alternarMenu(false);sair()"><span>↪</span> Sair da conta</button></div>
+  </nav>
+
+  <section id="painelResumo" class="resumo-grid" aria-label="Resumo da programação">
+    <article class="resumo-card"><span class="resumo-icone">🎤</span><div><div class="resumo-label">Oradores cadastrados</div><strong id="totalOradores">0</strong></div></article>
+    <article class="resumo-card"><span class="resumo-icone">📅</span><div><div class="resumo-label">Próximos discursos</div><strong id="totalProximos">0</strong></div></article>
+    <article class="resumo-card"><span class="resumo-icone">📚</span><div><div class="resumo-label">Temas disponíveis</div><strong id="totalTemas">194</strong></div></article>
+  </section>
+  <div class="painel painel-status">
+    <div class="status-topo"><span class="status-ponto"></span><span>Área compartilhada</span><span class="status-separador">•</span><span>Dados sincronizados</span></div>
+    <div id="usuario" class="status"></div>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+  </div>
+
+  <section id="abaDiscursos">
+    <div class="painel">
+      <div class="linha">
+        <input id="search" type="text" placeholder="🔎 Pesquisar por número ou título...">
+        <button class="salvar" onclick="salvar()">💾 Salvar marcações</button>
+        <button id="btnLimparMarcacoes" class="secundario oculto" onclick="limpar()">🗑 Limpar marcações</button>
+      </div>
+    </div>
+    <div class="painel">
+      <h2>⚙️ Gerenciar temas</h2>
+      <p class="ajuda">Adicione temas personalizados. Os temas adicionados ficam disponíveis para todos os usuários conectados.</p>
+      <div class="tema-cadastro">
+        <label>Número<input id="novoTemaNumero" type="number" min="1" placeholder="Ex.: 195"></label>
+        <label>Nome do tema<input id="novoTemaTitulo" maxlength="220" placeholder="Digite o título do tema novo"></label>
+        <button class="salvar" type="button" onclick="adicionarTema()">＋ Adicionar tema</button>
+      </div>
+      <p class="ajuda">Para cadastrar um orador, basta informar o número do discurso: o título será preenchido automaticamente. O botão “Riscar tema” permite marcar um tema que não deve ser usado; use “Tirar risco” para restaurá-lo.</p>
+      <div id="lista"></div>
+    </div>
+  </section>
+
+  <section id="abaOradores" class="oculto">
+    <div class="painel">
+      <h2>🎤 Cadastro de oradores</h2>
+      <p class="ajuda">Cadastre o nome, tema e congregação. Os dados ficam salvos no Supabase e podem ser consultados em outro dispositivo ao entrar na mesma conta.</p>
+      <form id="formOrador" onsubmit="salvarOrador(event)">
+        <input type="hidden" id="oradorId">
+        <div class="form-grid">
+          <label>Nome do orador
+            <input id="oradorNome" required maxlength="120" placeholder="Ex.: Henrique César">
+          </label>
+          <label>Número do discurso
+            <input id="oradorNumero" class="numero-discurso" type="number" min="1" placeholder="Ex.: 186" oninput="preencherTemaPorNumero()" >
+          </label>
+          <label>Tema do discurso
+            <input id="oradorTema" required maxlength="220" placeholder="O tema será preenchido pelo número ou você pode digitá-lo">
+          </label>
+          <label>Congregação do orador
+            <input id="oradorCongregacao" required maxlength="120" placeholder="Ex.: Messejana">
+          </label>
+          <label>WhatsApp do orador
+            <input id="oradorTelefone" type="tel" maxlength="30" placeholder="Ex.: 5585999999999">
+          </label>
+          <label>Endereço do local do discurso
+            <input id="oradorEndereco" maxlength="250" placeholder="Rua, número, bairro e cidade">
+          </label>
+          <label>Data do discurso
+            <input id="oradorData" type="date" required>
+          </label>
+          <label>Horário
+            <input id="oradorHorario" type="time" required value="09:00">
+          </label>
+          <label>Período
+            <select id="oradorPeriodo">
+              <option value="Manhã">Manhã</option>
+              <option value="Tarde">Tarde</option>
+              <option value="Noite">Noite</option>
+            </select>
+          </label>
+        </div>
+        <div class="linha form-actions">
+          <button class="salvar" type="submit" id="btnSalvarOrador">💾 Salvar orador</button>
+          <button class="secundario oculto" type="button" id="btnCancelarEdicao" onclick="cancelarEdicao()">Cancelar edição</button>
+        </div>
+      </form>
+    </div>
+    <div class="painel" id="painelLembretes">
+      <h2>🔔 Lembretes de discursos</h2>
+      <p class="ajuda">Mostra os discursos cujo lembrete de um mês já chegou. Confira o telefone e o endereço e toque em WhatsApp para preparar a mensagem.</p>
+      <div class="linha" style="margin-bottom:10px"><button class="secundario" type="button" onclick="ativarNotificacoesLembretes()">🔔 Ativar notificações neste navegador</button></div>
+      <div id="listaLembretes"></div>
+    </div>
+    <div class="painel">
+      <div class="linha">
+        <input id="buscarOrador" type="text" placeholder="🔎 Pesquisar orador, tema ou congregação..." oninput="renderOradores()">
+        <button id="tabListaOradores" class="primario" type="button" onclick="mudarVisualizacaoOradores('lista')">📋 Lista completa</button>
+        <button id="tabAgendaOradores" class="secundario" type="button" onclick="mudarVisualizacaoOradores('agenda')">🗓️ Agenda por data</button>
+      </div>
+      <div id="contadoresOradores" class="contadores"></div>
+      <div id="listaOradores"></div>
+    </div>
+  </section>
+</div>
+
+<script defer src="app.js"></script>
+</body>
+</html>

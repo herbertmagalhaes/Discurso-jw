@@ -1,0 +1,43 @@
+SITE DISCURSOS PÚBLICOS — VERSÃO ORGANIZADA
+
+ESTA VERSÃO
+- Todas as opções de navegação ficam no menu de três barras.
+- Menu: Visão geral, Temas de discursos, Oradores cadastrados, Agenda de oradores, Incluir orador, Lembretes e WhatsApp e Exportar para planilha.
+- Visual reorganizado para celular e computador, com cabeçalho, menu lateral e painel de resumo.
+- Lista e agenda de oradores, pesquisa, geração de convite e marcação de convite enviado.
+- Lembrete de um mês antes do discurso: prepara uma mensagem com data e endereço, permite copiar o texto ou abrir o WhatsApp.
+- Exportação Excel com abas Oradores, Temas e Marcações.
+- Mantém a conexão com o projeto Supabase existente e os arquivos de convite e logotipo já usados.
+
+COMO PUBLICAR NO GITHUB PAGES
+1. Guarde uma cópia dos arquivos atuais do repositório.
+2. Descompacte este ZIP.
+3. Envie para a raiz do repositório os arquivos index.html e app.js e a pasta assets inteira, substituindo os arquivos antigos.
+4. Mantenha os arquivos SQL e este LEIA-ME no repositório, se desejar; eles não são carregados pelo site.
+5. Faça commit das alterações e aguarde o GitHub Pages atualizar.
+6. Abra o site e atualize a página. Se necessário, faça uma atualização forçada/limpe o cache do navegador.
+
+SUPABASE
+- A URL e a chave pública (publishable) do projeto Supabase existente foram mantidas no app.js.
+- Esta atualização de organização visual e navegação não exige recriar o projeto Supabase nem apagar tabelas ou dados.
+- Os recursos de temas compartilhados, risco de tema e lembretes dependem das colunas/tabelas SQL que já acompanham as versões anteriores. Se o site mostrar erro de coluna/tabela ausente, execute somente o SQL específico correspondente que ainda não tenha sido aplicado.
+- NÃO compartilhe senha, chave secreta ou service_role key. A chave pública do cliente é a apropriada para o navegador, com as políticas RLS configuradas no Supabase.
+
+LEMBRETES
+- A mensagem contém a data e o endereço cadastrados no orador.
+- “Copiar mensagem” copia o texto para colar em qualquer aplicativo; “Enviar pelo WhatsApp” abre a conversa com a mensagem preenchida.
+- O site não envia mensagens automaticamente.
+- Notificações do navegador só são verificadas quando o site está aberto; não é um serviço de push que funcione com o site fechado.
+
+ARQUIVOS
+- index.html — interface e menu
+- app.js — funcionalidades e conexão com Supabase
+- assets/ — modelo de convite e imagem de marca já utilizados
+- arquivos .sql — referências de configuração/migração do banco
+
+
+CORRECAO DO CADASTRO DE ORADORES
+1. No Supabase, abra SQL Editor.
+2. Abra o arquivo atualizar_oradores.sql que acompanha este ZIP, copie o conteúdo e execute.
+3. Atualize o site publicado e teste incluir um orador.
+O SQL preserva os registros existentes. O cadastro requer sessão autenticada e a coluna user_id.
